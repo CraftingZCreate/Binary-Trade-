@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Trade Statistics</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav>
+  <a href="index.html">Home</a>
+  <a href="stats.html">Statistics</a>
+  <a href="settings.html">Settings</a>
+</nav>
+
+<div class="container">
+  <div class="card">
+    <h3>Trade Analytics</h3>
+    <p>Total Trades: <span id="totalTrades">0</span></p>
+    <p>Total Profit: <span id="totalProfit" class="profit">0</span></p>
+    <p>Total Loss: <span id="totalLoss" class="loss">0</span></p>
+    <p>Win Rate: <span id="winRate">0%</span></p>
+  </div>
+
+  <div class="card">
+    <h3>Trades Table</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Pair</th>
+          <th>TF</th>
+          <th>Result</th>
+          <th>Amount</th>
+        </tr>
+      </thead>
+      <tbody id="statsTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+let trades = JSON.parse(localStorage.getItem("trades")) || [];
+
+function renderStats(){
+  let totalTrades = trades.length;
+  let totalProfit = 0;
+  let totalLoss = 0;
+  let wins = 0;
+
+  let statsTable = document.getElementById("statsTable");
+  statsTable.innerHTML = "";
+
+  trades.forEach(trade => {
+    if(trade.result === "profit"){
+      totalProfit += trade.amount;
+      wins++;
+    } else {
+      totalLoss += trade.amount;
+    }
+
+    let row = `
+      <tr>
+        <td>${trade.pair}</td>
+        <td>${trade.timeframe}</td>
+        <td class="${trade.result==='profit'?'profit':'loss'}">${trade.result}</td>
+        <td>${trade.amount}</td>
+      </tr>
+    `;
+    statsTable.innerHTML += row;
+  });
+
+  document.getElementById("totalTrades").innerText = totalTrades;
+  document.getElementById("totalProfit").innerText = totalProfit;
+  document.getElementById("totalLoss").innerText = totalLoss;
+  document.getElementById("winRate").innerText = totalTrades ? Math.round((wins/totalTrades)*100) + "%" : "0%";
+}
+
+renderStats();
+</script>
+
+</body>
+</html>
