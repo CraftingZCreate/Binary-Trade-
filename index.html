@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Binary Trade Journal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body{
+      margin:0;
+      font-family:Arial, sans-serif;
+      background:#111;
+      color:#fff;
+    }
+
+    nav{
+      background:#1e1e1e;
+      padding:15px;
+      text-align:center;
+    }
+
+    nav a{
+      color:#00ff88;
+      margin:0 15px;
+      text-decoration:none;
+      font-weight:bold;
+    }
+
+    .container{
+      padding:20px;
+      max-width:600px;
+      margin:auto;
+    }
+
+    .card{
+      background:#1c1c1c;
+      padding:15px;
+      border-radius:10px;
+      margin-bottom:15px;
+    }
+
+    input, select, button{
+      width:100%;
+      padding:10px;
+      margin:8px 0;
+      border-radius:6px;
+      border:none;
+    }
+
+    input, select{
+      background:#222;
+      color:white;
+    }
+
+    button{
+      background:#00c853;
+      color:white;
+      font-weight:bold;
+      cursor:pointer;
+    }
+
+    .profit{ color:#00ff88; }
+    .loss{ color:#ff5252; }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:10px;
+    }
+
+    th, td{
+      padding:8px;
+      text-align:center;
+      border-bottom:1px solid #333;
+    }
+
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html">Home</a>
+  <a href="stats.html">Statistics</a>
+  <a href="settings.html">Settings</a>
+</nav>
+
+<div class="container">
+
+  <div class="card">
+    <h3>Summary</h3>
+    <p>Total Profit: <span id="totalProfit" class="profit">0</span></p>
+    <p>Total Loss: <span id="totalLoss" class="loss">0</span></p>
+    <p>Net Result: <span id="netResult">0</span></p>
+  </div>
+
+  <div class="card">
+    <h3>Add Trade</h3>
+    <input type="text" id="pair" placeholder="Pair (e.g EURUSD)">
+    
+    <select id="timeframe">
+      <option value="1m">1m</option>
+      <option value="5m">5m</option>
+      <option value="15m">15m</option>
+    </select>
+
+    <select id="result">
+      <option value="profit">Profit</option>
+      <option value="loss">Loss</option>
+    </select>
+
+    <input type="number" id="amount" placeholder="Amount">
+
+    <button onclick="addTrade()">Add Trade</button>
+  </div>
+
+  <div class="card">
+    <h3>Trade History</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Pair</th>
+          <th>TF</th>
+          <th>Result</th>
+          <th>Amount</th>
+        </tr>
+      </thead>
+      <tbody id="history"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+let trades = JSON.parse(localStorage.getItem("trades")) || [];
+
+function saveData(){
+  localStorage.setItem("trades", JSON.stringify(trades));
+}
+
+function addTrade(){
+  let pair = document.getElementById("pair").value;
+  let timeframe = document.getElementById("timeframe").value;
+  let result = document.getElementById("result").value;
+  let amount = parseFloat(document.getElementById("amount").value);
+
+  if(!pair || !amount){
+    alert("Fill all fields");
+    return;
+  }
+
+  trades.push({pair, timeframe, result, amount});
+  saveData();
+  render();
+}
+
+function render(){
+  let history = document.getElementById("history");
+  history.innerHTML = "";
+
+  let totalProfit = 0;
+  let totalLoss = 0;
+
+  trades.forEach(trade=>{
+    let row = `
+      <tr>
+        <td>${trade.pair}</td>
+        <td>${trade.timeframe}</td>
+        <td class="${trade.result==='profit'?'profit':'loss'}">
+          ${trade.result}
+        </td>
+        <td>${trade.amount}</td>
+      </tr>
+    `;
+    history.innerHTML += row;
+
+    if(trade.result === "profit"){
+      totalProfit += trade.amount;
+    }else{
+      totalLoss += trade.amount;
+    }
+  });
+
+  document.getElementById("totalProfit").innerText = totalProfit;
+  document.getElementById("totalLoss").innerText = totalLoss;
+  document.getElementById("netResult").innerText = totalProfit - totalLoss;
+}
+
+render();
+</script>
+
+</body>
+</html>
