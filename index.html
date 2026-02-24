@@ -3,6 +3,7 @@
 <head>
   <title>Binary Trade Journal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <style>
     body{
       margin:0;
@@ -26,7 +27,7 @@
 
     .container{
       padding:20px;
-      max-width:600px;
+      max-width:650px;
       margin:auto;
     }
 
@@ -43,6 +44,7 @@
       margin:8px 0;
       border-radius:6px;
       border:none;
+      font-size:14px;
     }
 
     input, select{
@@ -57,6 +59,10 @@
       cursor:pointer;
     }
 
+    button:hover{
+      opacity:0.9;
+    }
+
     .profit{ color:#00ff88; }
     .loss{ color:#ff5252; }
 
@@ -64,12 +70,22 @@
       width:100%;
       border-collapse:collapse;
       margin-top:10px;
+      font-size:13px;
     }
 
     th, td{
       padding:8px;
       text-align:center;
       border-bottom:1px solid #333;
+    }
+
+    .edit-btn{
+      background:#2196f3;
+      margin-bottom:5px;
+    }
+
+    .delete-btn{
+      background:#ff5252;
     }
 
   </style>
@@ -92,8 +108,9 @@
   </div>
 
   <div class="card">
-    <h3>Add Trade</h3>
-    <input type="text" id="pair" placeholder="Pair (e.g EURUSD)">
+    <h3 id="formTitle">Add Trade</h3>
+
+    <input type="text" id="pair" placeholder="Pair (EURUSD)">
     
     <select id="timeframe">
       <option value="1m">1m</option>
@@ -108,7 +125,7 @@
 
     <input type="number" id="amount" placeholder="Amount">
 
-    <button onclick="addTrade()">Add Trade</button>
+    <button id="submitBtn" onclick="saveTrade()">Add Trade</button>
   </div>
 
   <div class="card">
@@ -120,6 +137,7 @@
           <th>TF</th>
           <th>Result</th>
           <th>Amount</th>
+          <th>Action</th>
         </tr>
       </thead>
       <tbody id="history"></tbody>
@@ -130,25 +148,64 @@
 
 <script>
 let trades = JSON.parse(localStorage.getItem("trades")) || [];
+let editIndex = null;
 
-function saveData(){
+function saveToStorage(){
   localStorage.setItem("trades", JSON.stringify(trades));
 }
 
-function addTrade(){
-  let pair = document.getElementById("pair").value;
+function saveTrade(){
+  let pair = document.getElementById("pair").value.trim();
   let timeframe = document.getElementById("timeframe").value;
   let result = document.getElementById("result").value;
   let amount = parseFloat(document.getElementById("amount").value);
 
-  if(!pair || !amount){
-    alert("Fill all fields");
+  if(!pair || isNaN(amount)){
+    alert("Fill all fields correctly");
     return;
   }
 
-  trades.push({pair, timeframe, result, amount});
-  saveData();
+  let tradeData = {pair, timeframe, result, amount};
+
+  if(editIndex === null){
+    trades.push(tradeData);
+  } else {
+    trades[editIndex] = tradeData;
+    editIndex = null;
+    document.getElementById("formTitle").innerText = "Add Trade";
+    document.getElementById("submitBtn").innerText = "Add Trade";
+  }
+
+  clearForm();
+  saveToStorage();
   render();
+}
+
+function editTrade(index){
+  let trade = trades[index];
+
+  document.getElementById("pair").value = trade.pair;
+  document.getElementById("timeframe").value = trade.timeframe;
+  document.getElementById("result").value = trade.result;
+  document.getElementById("amount").value = trade.amount;
+
+  editIndex = index;
+
+  document.getElementById("formTitle").innerText = "Edit Trade";
+  document.getElementById("submitBtn").innerText = "Update Trade";
+}
+
+function deleteTrade(index){
+  if(confirm("Delete this trade?")){
+    trades.splice(index,1);
+    saveToStorage();
+    render();
+  }
+}
+
+function clearForm(){
+  document.getElementById("pair").value = "";
+  document.getElementById("amount").value = "";
 }
 
 function render(){
@@ -158,7 +215,7 @@ function render(){
   let totalProfit = 0;
   let totalLoss = 0;
 
-  trades.forEach(trade=>{
+  trades.forEach((trade,index)=>{
     let row = `
       <tr>
         <td>${trade.pair}</td>
@@ -167,13 +224,17 @@ function render(){
           ${trade.result}
         </td>
         <td>${trade.amount}</td>
+        <td>
+          <button class="edit-btn" onclick="editTrade(${index})">Edit</button>
+          <button class="delete-btn" onclick="deleteTrade(${index})">Delete</button>
+        </td>
       </tr>
     `;
     history.innerHTML += row;
 
     if(trade.result === "profit"){
       totalProfit += trade.amount;
-    }else{
+    } else {
       totalLoss += trade.amount;
     }
   });
