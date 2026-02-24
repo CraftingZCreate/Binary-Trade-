@@ -4,6 +4,8 @@
   <title>Trade Statistics</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -14,6 +16,7 @@
 </nav>
 
 <div class="container">
+
   <div class="card">
     <h3>Trade Analytics</h3>
     <p>Total Trades: <span id="totalTrades">0</span></p>
@@ -23,10 +26,16 @@
   </div>
 
   <div class="card">
+    <h3>Profit/Loss Over Time (Daily)</h3>
+    <canvas id="dailyChart"></canvas>
+  </div>
+
+  <div class="card">
     <h3>Trades Table</h3>
     <table>
       <thead>
         <tr>
+          <th>Date</th>
           <th>Pair</th>
           <th>TF</th>
           <th>Result</th>
@@ -36,10 +45,18 @@
       <tbody id="statsTable"></tbody>
     </table>
   </div>
+
 </div>
 
 <script>
 let trades = JSON.parse(localStorage.getItem("trades")) || [];
+
+// Add a date to trades if not exists
+trades.forEach(trade=>{
+  if(!trade.date){
+    trade.date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  }
+});
 
 function renderStats(){
   let totalTrades = trades.length;
@@ -50,16 +67,27 @@ function renderStats(){
   let statsTable = document.getElementById("statsTable");
   statsTable.innerHTML = "";
 
+  // For daily chart
+  let dailyData = {};
+
   trades.forEach(trade => {
-    if(trade.result === "profit"){
+    if(trade.result==='profit'){
       totalProfit += trade.amount;
       wins++;
     } else {
       totalLoss += trade.amount;
     }
 
+    // Daily aggregation
+    if(!dailyData[trade.date]){
+      dailyData[trade.date] = 0;
+    }
+    dailyData[trade.date] += trade.result==='profit' ? trade.amount : -trade.amount;
+
+    // Table row
     let row = `
       <tr>
+        <td>${trade.date}</td>
         <td>${trade.pair}</td>
         <td>${trade.timeframe}</td>
         <td class="${trade.result==='profit'?'profit':'loss'}">${trade.result}</td>
@@ -72,7 +100,42 @@ function renderStats(){
   document.getElementById("totalTrades").innerText = totalTrades;
   document.getElementById("totalProfit").innerText = totalProfit;
   document.getElementById("totalLoss").innerText = totalLoss;
-  document.getElementById("winRate").innerText = totalTrades ? Math.round((wins/totalTrades)*100) + "%" : "0%";
+  document.getElementById("winRate").innerText = totalTrades ? Math.round((wins/totalTrades)*100)+'%' : '0%';
+
+  // Render Chart
+  renderDailyChart(dailyData);
+}
+
+function renderDailyChart(dailyData){
+  const ctx = document.getElementById('dailyChart').getContext('2d');
+  const labels = Object.keys(dailyData);
+  const data = Object.values(dailyData);
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Net Profit/Loss',
+        data: data,
+        borderColor: '#00ff88',
+        backgroundColor: 'rgba(0,255,136,0.2)',
+        fill: true,
+        tension:0.3
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
+    }
+  });
 }
 
 renderStats();
